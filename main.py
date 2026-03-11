@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
-from sim import run_simulation
+from sim import run_simulation_from_params
 from agent import parse_rocket_params
 import asyncio
 import httpx
@@ -106,7 +106,7 @@ async def handle_message(chat_id: str, text: str):
         f"⏱ Time to Apogee: {result['time_to_apogee_s']} s"
     )
     await send_message(chat_id, reply)
-    await send_message(chat_id=chat_id, text=reply)
+    await send_image(chat_id, result["plot_url"])
 
 
 async def send_message(chat_id: str, text: str):
@@ -123,5 +123,5 @@ async def send_image(chat_id: str, image_url: str):
         await client.post(
             f"{LINQ_BASE}/chats/{chat_id}/messages",
             headers={"Authorization": f"Bearer {LINQ_API_KEY}"},
-            json={"message": {"parts": [{"type": "text", "value": image_url}]}},
+            json={"message": {"parts": [{"type": "media", "url": image_url}]}},
         )
