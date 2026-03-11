@@ -21,7 +21,12 @@ app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Hello": "Orbit"}
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 
 seen_events = set()
@@ -58,32 +63,49 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
 async def handle_message(chat_id: str, text: str):
 
     lower = text.lower()
+    keywords = ["sim", "rocket", "launch", "motor", "mass", "kg", "lbs", "simulate"]
 
-    if "heavy" in lower:
-        preset = "2"
-    elif "model" in lower:
-        preset = "3"
-    elif "competition" in lower:
-        preset = "1"
-    elif "simulate" in lower:
-        preset = "simulate"
-    else:
-        await send_message(chat_id=chat_id, text=f"you said: {text}")
+    if not any(k in lower for k in keywords):
         await send_message(
-            chat_id, "Text 'sim', 'heavy', or 'light' to run a simulation!"
+            chat_id,
+            "Orbit — RocketPy over iMessage\n\nTry: 'simulate a 15kg rocket at 80 degrees'",
         )
         return
 
-    await send_message(chat_id=chat_id, text="running simulation...")
-    loop = asyncio.get_event_loop()
+    await send_message(chat_id, "Parsing your rocket...")
 
-    result = await loop.run_in_executor(None, run_simulation, preset)
-    reply = (
-        f" Apogee: {result['apogee_ft']} ft ({result['apogee_m']} m)\n"
-        f" Max Velocity: {result['max_velocity_ms']} m/s\n"
-        f" Max Mach: {result['max_mach']}\n"
-        f" Time to Apogee: {result['time_to_apogee_s']} s"
+    try:
+        loop = asyncio.get_event_loop()
+        params = await loop.run_in_executor(None, parse_rocket_params, text)
+    except Exception:
+        await send_message(
+            chat_id,
+            "Couldn't parse that. Try: 'simulate a 15kg rocket at 80 degrees'",
+        )
+        return
+
+    await send_message(
+        chat_id,
+        f"Got it!\n\n"
+        f"Name: {params['name']}\n"
+        f"Mass: {params['mass']} kg\n"
+        f"Inclination: {params['inclination']}°\n\n"
+        f"Running simulation...",
     )
+
+    try:
+        result = await loop.run_in_executor(None, run_simulation_from_params, params)
+    except Exception:
+        await send_message(chat_id, "❌ Simulation failed. Try different parameters.")
+        return
+    reply = (
+        f"🚀 {result['name']}\n\n"
+        f"📍 Apogee: {result['apogee_ft']} ft ({result['apogee_m']} m)\n"
+        f"⚡ Max Velocity: {result['max_velocity_ms']} m/s\n"
+        f"💥 Max Mach: {result['max_mach']}\n"
+        f"⏱ Time to Apogee: {result['time_to_apogee_s']} s"
+    )
+    await send_message(chat_id, reply)
     await send_message(chat_id=chat_id, text=reply)
 
 
@@ -103,8 +125,3 @@ async def send_image(chat_id: str, image_url: str):
             headers={"Authorization": f"Bearer {LINQ_API_KEY}"},
             json={"message": {"parts": [{"type": "text", "value": image_url}]}},
         )
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}

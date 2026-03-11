@@ -1,4 +1,3 @@
-import uuid
 import contextlib, io
 import matplotlib
 from dotenv import load_dotenv
@@ -6,24 +5,10 @@ import os
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-
 from rocketpy import Environment, SolidMotor, Rocket, Flight
 
 load_dotenv()
 
-PRESETS = {
-    "simulate": {"name": "base simulation", "mass": 15, "inclination": 90},
-    "1": {
-        "name": "Competition Rocket",
-        "mass": 14.426,
-        "inclination": 84,
-    },
-    "2": {"name": "Heavy Rocket", "mass": 20.0, "inclination": 75},
-    "3": {"name": "Model Rocket", "mass": 8.0, "inclination": 88},
-}
-
-
-# Cesaroni L1395 thrust curve (time in s, thrust in N)
 L1395_THRUST = [
     (0.0, 0.0),
     (0.1, 1530.0),
@@ -39,11 +24,8 @@ L1395_THRUST = [
 ]
 
 
-def run_simulation(preset_key: str = "1") -> dict:
-    p = PRESETS[preset_key]
-
+def _build_and_fly(name: str, mass: float, inclination: float) -> dict:
     env = Environment(latitude=41.775, longitude=-86.572, elevation=236)
-
     motor = SolidMotor(
         thrust_source=L1395_THRUST,
         burn_time=4.0,
@@ -63,10 +45,9 @@ def run_simulation(preset_key: str = "1") -> dict:
         nozzle_position=0.0,
         coordinate_system_orientation="combustion_chamber_to_nozzle",
     )
-
     rocket = Rocket(
         radius=0.0635,
-        mass=p["mass"],
+        mass=mass,
         inertia=(6.321, 6.321, 0.034),
         power_off_drag=0.43,
         power_on_drag=0.43,
@@ -79,50 +60,45 @@ def run_simulation(preset_key: str = "1") -> dict:
     rocket.add_trapezoidal_fins(
         4, span=0.170, root_chord=0.270, tip_chord=0.090, position=-1.04
     )
-    rocket.add_parachute("Main", cd_s=10.0, trigger="apogee", sampling_rate=25, lag=1.5)
+    rocket.add_parachute("Main", cd_s=10.0, trigger="apogee", sampling_rate=20, lag=1.5)
 
     with contextlib.redirect_stdout(io.StringIO()):
         flight = Flight(
             rocket=rocket,
             environment=env,
             rail_length=5.18,
-            inclination=p["inclination"],
+            inclination=inclination,
             heading=133,
             terminate_on_apogee=True,
         )
 
     apogee_m = flight.apogee - env.elevation
     apogee_ft = apogee_m * 3.28084
-
-    filename = f"orbit_sim.png"
+    filename = "orbit_sim.png"
     plot_path = f"assets/{filename}"
 
+    os.makedirs("assets", exist_ok=True)
     fig, axs = plt.subplots(3, 1, figsize=(8, 10))
+    fig.suptitle(f"Orbit — {name}", fontsize=14, fontweight="bold")
 
-    # Altitude
     t = flight.z[:, 0]
     alt = flight.z[:, 1] - env.elevation
-
     axs[0].plot(t, alt, linewidth=2)
     axs[0].set_title("Altitude vs Time")
     axs[0].set_xlabel("Time (s)")
     axs[0].set_ylabel("Altitude AGL (m)")
     axs[0].grid(True, alpha=0.3)
 
-    # Velocity
     vt = flight.speed[:, 0]
     v = flight.speed[:, 1]
-
     axs[1].plot(vt, v, linewidth=2)
     axs[1].set_title("Velocity vs Time")
     axs[1].set_xlabel("Time (s)")
     axs[1].set_ylabel("Velocity (m/s)")
     axs[1].grid(True, alpha=0.3)
 
-    # Mach
     mt = flight.mach_number[:, 0]
     mach = flight.mach_number[:, 1]
-
     axs[2].plot(mt, mach, linewidth=2)
     axs[2].set_title("Mach Number vs Time")
     axs[2].set_xlabel("Time (s)")
@@ -134,7 +110,7 @@ def run_simulation(preset_key: str = "1") -> dict:
     plt.close()
 
     return {
-        "name": p["name"],
+        "name": name,
         "apogee_ft": round(apogee_ft, 1),
         "apogee_m": round(apogee_m, 1),
         "max_velocity_ms": round(flight.max_speed, 1),
@@ -142,3 +118,11 @@ def run_simulation(preset_key: str = "1") -> dict:
         "time_to_apogee_s": round(flight.apogee_time, 1),
         "plot_url": f"https://orbitdemo.up.railway.app/assets/{filename}",
     }
+
+
+def run_simulation_from_params(params: dict) -> dict:
+    return _build_and_fly(
+        name=params.get("name", "Custom Rocket"),
+        mass=max(1.0, min(float(params.get("mass", 15.0)), 50.0)),
+        inclination=max(45.0, min(float(params.get("inclination", 84.0)), 90.0)),
+    )
