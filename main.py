@@ -95,7 +95,8 @@ async def handle_message(chat_id: str, text: str):
 
     try:
         result = await loop.run_in_executor(None, run_simulation_from_params, params)
-    except Exception:
+    except Exception as e:
+        print(f"SIM ERROR: {e}")
         await send_message(chat_id, "❌ Simulation failed. Try different parameters.")
         return
     reply = (
