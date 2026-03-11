@@ -75,6 +75,7 @@ async def handle_message(chat_id: str, text: str):
 
     await send_message(chat_id, "Parsing your rocket...")
 
+
     try:
         loop = asyncio.get_event_loop()
         params = await loop.run_in_executor(None, parse_rocket_params, text)
