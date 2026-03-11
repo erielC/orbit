@@ -61,6 +61,7 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 async def handle_message(chat_id: str, text: str):
+    print(f"HANDLE: chat_id={chat_id}, LINQ_API_KEY set={bool(LINQ_API_KEY)}")
 
     lower = text.lower()
     keywords = ["sim", "rocket", "launch", "motor", "mass", "kg", "lbs", "simulate"]
