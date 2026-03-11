@@ -35,6 +35,7 @@ Rules:
     )
     raw = response.content[0].text.strip()
     print(f"CLAUDE RAW RESPONSE: {raw}")
+    raw = raw.replace("```json", "").replace("```", "").strip()
 
     try:
         params = json.loads(raw)
