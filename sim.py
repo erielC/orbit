@@ -70,6 +70,7 @@ def _build_and_fly(name: str, mass: float, inclination: float) -> dict:
             inclination=inclination,
             heading=133,
             terminate_on_apogee=True,
+            max_time_step=0.1,
         )
 
     apogee_m = flight.apogee - env.elevation
