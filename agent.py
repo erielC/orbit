@@ -34,6 +34,8 @@ Rules:
         messages=[{"role": "user", "content": user_message}],
     )
     raw = response.content[0].text.strip()
+    print(f"CLAUDE RAW RESPONSE: {raw}")
+
     try:
         params = json.loads(raw)
     except json.JSONDecodeError:
