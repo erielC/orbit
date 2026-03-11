@@ -11,9 +11,14 @@ from rocketpy import Environment, SolidMotor, Rocket, Flight
 load_dotenv()
 
 PRESETS = {
-    "1": {"name": "NDRT Rocket", "mass": 14.426, "inclination": 84},
-    "2": {"name": "Heavy Rocket", "mass": 20.0, "inclination": 75},
-    "3": {"name": "Lightweight", "mass": 8.0, "inclination": 88},
+    "simulate": {"name": "base simulation", "mass": 15, "inclination": 90},
+    "simulate SpaceX rocket": {
+        "name": "Falcon 9 Rocket",
+        "mass": 14.426,
+        "inclination": 84,
+    },
+    "simulate heavy rocket": {"name": "Heavy Rocket", "mass": 20.0, "inclination": 75},
+    "simulate model rocket": {"name": "Model Rocket", "mass": 8.0, "inclination": 88},
 }
 
 

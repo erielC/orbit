@@ -55,22 +55,35 @@ async def webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 async def handle_message(chat_id: str, text: str):
-    if "simulate" in text.lower():
-        await send_message(chat_id=chat_id, text="running simulation...")
-        loop = asyncio.get_event_loop()
 
-        result = await loop.run_in_executor(None, run_simulation)
-        reply = (
-            f" Apogee: {result['apogee_ft']} ft ({result['apogee_m']} m)\n"
-            f" Max Velocity: {result['max_velocity_ms']} m/s\n"
-            f" Max Mach: {result['max_mach']}\n"
-            f" Time to Apogee: {result['time_to_apogee_s']} s"
-        )
-        await send_message(chat_id=chat_id, text=reply)
-        image_url = "https://debbi-earthen-pacifistically.ngrok-free.dev/assets/orbit_sim.png"
-        await send_image(chat_id, image_url)
+    lower = text.lower()
+
+    if "heavy" in lower:
+        preset = "2"
+    elif "light" in lower:
+        preset = "3"
+    elif "sim" in lower:
+        preset = "1"
+    elif "simulate" in lower:
+        preset = "simulate"
     else:
         await send_message(chat_id=chat_id, text=f"you said: {text}")
+        await send_message(
+            chat_id, "Text 'sim', 'heavy', or 'light' to run a simulation!"
+        )
+        return
+
+    await send_message(chat_id=chat_id, text="running simulation...")
+    loop = asyncio.get_event_loop()
+
+    result = await loop.run_in_executor(None, run_simulation, preset)
+    reply = (
+        f" Apogee: {result['apogee_ft']} ft ({result['apogee_m']} m)\n"
+        f" Max Velocity: {result['max_velocity_ms']} m/s\n"
+        f" Max Mach: {result['max_mach']}\n"
+        f" Time to Apogee: {result['time_to_apogee_s']} s"
+    )
+    await send_message(chat_id=chat_id, text=reply)
 
 
 async def send_message(chat_id: str, text: str):
