@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+import re
 import anthropic
 import json
 import os
@@ -33,10 +34,14 @@ Rules:
 - Return only valid JSON, no explanation.""",
         messages=[{"role": "user", "content": user_message}],
     )
+
+
     raw = response.content[0].text.strip()
     print(f"CLAUDE RAW RESPONSE: {raw}")
-    raw = raw.replace("```json", "").replace("```", "").strip()
-
+    # Extract just the JSON object
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if match:
+        raw = match.group(0)
     try:
         params = json.loads(raw)
     except json.JSONDecodeError:
