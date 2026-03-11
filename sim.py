@@ -1,4 +1,5 @@
 import uuid
+import contextlib, io
 import matplotlib
 from dotenv import load_dotenv
 import os
@@ -12,13 +13,13 @@ load_dotenv()
 
 PRESETS = {
     "simulate": {"name": "base simulation", "mass": 15, "inclination": 90},
-    "simulate SpaceX rocket": {
-        "name": "Falcon 9 Rocket",
+    "1": {
+        "name": "Competition Rocket",
         "mass": 14.426,
         "inclination": 84,
     },
-    "simulate heavy rocket": {"name": "Heavy Rocket", "mass": 20.0, "inclination": 75},
-    "simulate model rocket": {"name": "Model Rocket", "mass": 8.0, "inclination": 88},
+    "2": {"name": "Heavy Rocket", "mass": 20.0, "inclination": 75},
+    "3": {"name": "Model Rocket", "mass": 8.0, "inclination": 88},
 }
 
 
@@ -78,17 +79,17 @@ def run_simulation(preset_key: str = "1") -> dict:
     rocket.add_trapezoidal_fins(
         4, span=0.170, root_chord=0.270, tip_chord=0.090, position=-1.04
     )
-    rocket.add_parachute(
-        "Main", cd_s=10.0, trigger="apogee", sampling_rate=105, lag=1.5
-    )
+    rocket.add_parachute("Main", cd_s=10.0, trigger="apogee", sampling_rate=25, lag=1.5)
 
-    flight = Flight(
-        rocket=rocket,
-        environment=env,
-        rail_length=5.18,
-        inclination=p["inclination"],
-        heading=133,
-    )
+    with contextlib.redirect_stdout(io.StringIO()):
+        flight = Flight(
+            rocket=rocket,
+            environment=env,
+            rail_length=5.18,
+            inclination=p["inclination"],
+            heading=133,
+            terminate_on_apogee=True,
+        )
 
     apogee_m = flight.apogee - env.elevation
     apogee_ft = apogee_m * 3.28084

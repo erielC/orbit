@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from sim import run_simulation
+from agent import parse_rocket_params
 import asyncio
 import httpx
 import os
@@ -60,9 +61,9 @@ async def handle_message(chat_id: str, text: str):
 
     if "heavy" in lower:
         preset = "2"
-    elif "light" in lower:
+    elif "model" in lower:
         preset = "3"
-    elif "sim" in lower:
+    elif "competition" in lower:
         preset = "1"
     elif "simulate" in lower:
         preset = "simulate"
