@@ -10,6 +10,13 @@ from rocketpy import Environment, SolidMotor, Rocket, Flight
 
 load_dotenv()
 
+PRESETS = {
+    "1": {"name": "NDRT Rocket", "mass": 14.426, "inclination": 84},
+    "2": {"name": "Heavy Rocket", "mass": 20.0, "inclination": 75},
+    "3": {"name": "Lightweight", "mass": 8.0, "inclination": 88},
+}
+
+
 # Cesaroni L1395 thrust curve (time in s, thrust in N)
 L1395_THRUST = [
     (0.0, 0.0),
@@ -26,7 +33,8 @@ L1395_THRUST = [
 ]
 
 
-def run_simulation() -> dict:
+def run_simulation(preset_key: str = "1") -> dict:
+    p = PRESETS[preset_key]
 
     env = Environment(latitude=41.775, longitude=-86.572, elevation=236)
 
@@ -52,7 +60,7 @@ def run_simulation() -> dict:
 
     rocket = Rocket(
         radius=0.0635,
-        mass=14.426,
+        mass=p["mass"],
         inertia=(6.321, 6.321, 0.034),
         power_off_drag=0.43,
         power_on_drag=0.43,
@@ -70,7 +78,11 @@ def run_simulation() -> dict:
     )
 
     flight = Flight(
-        rocket=rocket, environment=env, rail_length=5.18, inclination=84, heading=133
+        rocket=rocket,
+        environment=env,
+        rail_length=5.18,
+        inclination=p["inclination"],
+        heading=133,
     )
 
     apogee_m = flight.apogee - env.elevation
@@ -116,10 +128,11 @@ def run_simulation() -> dict:
     plt.close()
 
     return {
+        "name": p["name"],
         "apogee_ft": round(apogee_ft, 1),
         "apogee_m": round(apogee_m, 1),
         "max_velocity_ms": round(flight.max_speed, 1),
         "max_mach": round(flight.max_mach_number, 3),
         "time_to_apogee_s": round(flight.apogee_time, 1),
-        "plot_url": f"{os.getenv("NGROK_BASE_URL")}/assets/{filename}",
+        "plot_url": f"https://orbitdemo.up.railway.app/assets/{filename}",
     }
